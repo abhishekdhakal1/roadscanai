@@ -35,7 +35,7 @@ function PotholeFeed({ potholes, loading, selectedId, onSelect, onRetry, error }
     return (
       <div className="rounded-lg border border-dashed border-concrete-200 px-4 py-8 text-center">
         <p className="text-2xl">🛣️</p>
-        <p className="mt-2 text-sm font-semibold text-asphalt-700">No potholes found</p>
+        <p className="mt-2 text-sm font-semibold text-asphalt-700">No active potholes detected.</p>
         <p className="mt-1 text-xs text-asphalt-500">
           No detections match the current filters, or the road is clear!
         </p>
