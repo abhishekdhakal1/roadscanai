@@ -20,7 +20,7 @@
  * @property {string}  status           - Current status (e.g. "active")
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL 
 const REQUEST_TIMEOUT_MS = 10_000
 
 /**
