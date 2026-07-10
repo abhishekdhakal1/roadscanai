@@ -1,14 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { getSeverity } from '../../utils/severity'
 import { formatCoords, formatTimestamp } from '../../utils/formatters'
 import SeverityBadge from '../common/SeverityBadge'
 
-// Default Leaflet marker icons reference image files that don't resolve
-// correctly under Vite's bundling, so we build custom divIcons instead.
-// This also lets us color-code markers by severity per the proposal's
-// "colour-coded marker" dashboard requirement (Section 4, Expected Outcome).
+/**
+ * Build a color-coded Leaflet divIcon by severity level.
+ * High → Red, Medium → Orange, Low → Yellow/Green
+ */
 function buildIcon(level) {
   const s = getSeverity(level)
   return L.divIcon({
@@ -16,7 +16,7 @@ function buildIcon(level) {
     html: `<div class="pothole-pin" style="background:${s.hex}"></div>`,
     iconSize: [26, 26],
     iconAnchor: [13, 13],
-    popupAnchor: [0, -13]
+    popupAnchor: [0, -13],
   })
 }
 
@@ -26,15 +26,18 @@ function FlyToSelected({ selected }) {
   const map = useMap()
   useEffect(() => {
     if (selected) {
-      map.flyTo([selected.lat, selected.lng], 16, { duration: 0.8 })
+      map.flyTo([selected.lat, selected.lon], 16, { duration: 0.8 })
     }
   }, [selected, map])
   return null
 }
 
-export default function PotholeMap({ potholes, selectedId, onSelect }) {
+function PotholeMap({ potholes, selectedId, onSelect }) {
   const markerRefs = useRef({})
-  const selected = potholes.find((p) => p.id === selectedId)
+  const selected = useMemo(
+    () => potholes.find((p) => p.id === selectedId) || null,
+    [potholes, selectedId]
+  )
 
   useEffect(() => {
     if (selectedId && markerRefs.current[selectedId]) {
@@ -59,7 +62,7 @@ export default function PotholeMap({ potholes, selectedId, onSelect }) {
       {potholes.map((p) => (
         <Marker
           key={p.id}
-          position={[p.lat, p.lng]}
+          position={[p.lat, p.lon]}
           icon={buildIcon(p.severity)}
           eventHandlers={{ click: () => onSelect(p.id) }}
           ref={(ref) => {
@@ -67,21 +70,25 @@ export default function PotholeMap({ potholes, selectedId, onSelect }) {
           }}
         >
           <Popup>
-            <div className="p-3">
+            <div className="p-3 min-w-[220px]">
               <div className="flex items-center justify-between gap-2">
                 <p className="font-display text-sm font-semibold text-asphalt-900">
-                  {p.road_name}
+                  Pothole #{p.id}
                 </p>
                 <SeverityBadge level={p.severity} />
               </div>
-              <p className="mt-1.5 font-mono text-xs text-asphalt-500">
-                {formatCoords(p.lat, p.lng)}
-              </p>
+
               <div className="mt-2 space-y-1 text-xs text-asphalt-600">
-                <p>Confidence: {(p.confidence * 100).toFixed(0)}%</p>
-                <p>Device: {p.device_id}</p>
-                <p>Detected: {formatTimestamp(p.detected_at)}</p>
-                <p>Status: {p.status.replace('_', ' ')}</p>
+                <p><span className="font-semibold">ID:</span> {p.id}</p>
+                <p><span className="font-semibold">Severity:</span> {p.severity}</p>
+                <p><span className="font-semibold">Confidence:</span> {(p.confidence * 100).toFixed(1)}%</p>
+                <p><span className="font-semibold">Detection Count:</span> {p.detection_count}</p>
+                <p><span className="font-semibold">Status:</span> {p.status}</p>
+                <p><span className="font-semibold">First Seen:</span> {formatTimestamp(p.first_seen)}</p>
+                <p><span className="font-semibold">Last Seen:</span> {formatTimestamp(p.last_seen)}</p>
+                <p className="font-mono text-[11px] text-asphalt-500 pt-1">
+                  {formatCoords(p.lat, p.lon)}
+                </p>
               </div>
             </div>
           </Popup>
@@ -90,3 +97,5 @@ export default function PotholeMap({ potholes, selectedId, onSelect }) {
     </MapContainer>
   )
 }
+
+export default memo(PotholeMap)

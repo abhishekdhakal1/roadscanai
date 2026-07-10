@@ -1,4 +1,6 @@
+import { memo } from 'react'
 import { SEVERITY } from '../../utils/severity'
+import { formatTimestamp } from '../../utils/formatters'
 
 function StatCard({ label, value, color, loading }) {
   return (
@@ -14,33 +16,51 @@ function StatCard({ label, value, color, loading }) {
   )
 }
 
-export default function StatsPanel({ stats, loading }) {
+/**
+ * @param {{
+ *   stats: { total: number, high: number, medium: number, low: number, avgConfidence: number, latestDetection: string | null },
+ *   loading: boolean
+ * }} props
+ */
+function StatsPanel({ stats, loading }) {
   return (
     <div>
       <p className="mb-3 text-[11px] font-mono uppercase tracking-wider text-asphalt-500">
         Network Overview
       </p>
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Total Detected" value={stats?.total ?? 0} loading={loading} />
+        <StatCard label="Total Active" value={stats?.total ?? 0} loading={loading} />
         <StatCard
           label="High Severity"
-          value={stats?.bySeverity?.high ?? 0}
+          value={stats?.high ?? 0}
           color={SEVERITY.high.hex}
           loading={loading}
         />
         <StatCard
           label="Medium Severity"
-          value={stats?.bySeverity?.medium ?? 0}
+          value={stats?.medium ?? 0}
           color={SEVERITY.medium.hex}
           loading={loading}
         />
         <StatCard
           label="Low Severity"
-          value={stats?.bySeverity?.low ?? 0}
+          value={stats?.low ?? 0}
           color={SEVERITY.low.hex}
+          loading={loading}
+        />
+        <StatCard
+          label="Avg Confidence"
+          value={stats?.avgConfidence ? `${(stats.avgConfidence * 100).toFixed(0)}%` : '—'}
+          loading={loading}
+        />
+        <StatCard
+          label="Latest Detection"
+          value={stats?.latestDetection ? formatTimestamp(stats.latestDetection) : '—'}
           loading={loading}
         />
       </div>
     </div>
   )
 }
+
+export default memo(StatsPanel)

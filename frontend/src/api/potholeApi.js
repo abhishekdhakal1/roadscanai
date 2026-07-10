@@ -1,114 +1,61 @@
-// -----------------------------------------------------------------------
-// RoadScanAI API layer
+// ---------------------------------------------------------------------------
+// RoadScanAI — API Layer
 //
-// This mirrors the FastAPI backend described in the proposal
-// (Section 3.1.2 Software Layer):
+// Single endpoint consumed by the frontend:
+//   GET /api/v1/potholes/unfixed
 //
-//   GET   /potholes            -> list all detection events
-//   GET   /potholes/:id        -> single detection event
-//   GET   /potholes/stats      -> aggregate counts for the stats panel
-//   POST  /potholes            -> create a detection event (sent by the
-//                                  ESP32-CAM/SIM800L unit over GSM in
-//                                  production; simulated here)
-//   PATCH /potholes/:id/status -> update repair status from the dashboard
-//   GET   /devices             -> list of edge devices (vehicles) online
-//
-// Right now there is no backend, so every function below resolves from
-// the in-memory mock dataset with an artificial delay to mimic network
-// latency. When the FastAPI + PostgreSQL backend is deployed, set
-// VITE_API_BASE_URL in a .env file and flip USE_MOCK to false -- every
-// call site in the app stays the same.
-// -----------------------------------------------------------------------
+// Base URL is read from the VITE_API_URL environment variable.
+// ---------------------------------------------------------------------------
 
-import { mockPotholes, mockDevices, addMockPothole } from './mockData'
+/**
+ * @typedef {Object} Pothole
+ * @property {number}  id               - Unique detection ID
+ * @property {number}  lat              - Latitude of the pothole
+ * @property {number}  lon              - Longitude of the pothole
+ * @property {'high'|'medium'|'low'} severity - Severity classification
+ * @property {number}  confidence       - Model confidence (0–1)
+ * @property {string}  first_seen       - ISO 8601 timestamp of first detection
+ * @property {string}  last_seen        - ISO 8601 timestamp of most recent detection
+ * @property {number}  detection_count  - Number of times this pothole was detected
+ * @property {string}  status           - Current status (e.g. "active")
+ */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const USE_MOCK = true // set to false once the real FastAPI backend is deployed
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const REQUEST_TIMEOUT_MS = 10_000
 
-function delay(ms = 500) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+/**
+ * Fetch all unfixed potholes from the backend.
+ * @returns {Promise<Pothole[]>}
+ */
+export async function getUnfixedPotholes() {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
-async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options
-  })
-  if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`)
-  }
-  return res.json()
-}
-
-// GET /potholes
-export async function getPotholes() {
-  if (USE_MOCK) {
-    await delay(400)
-    return [...mockPotholes].sort(
-      (a, b) => new Date(b.detected_at) - new Date(a.detected_at)
-    )
-  }
-  return request('/potholes')
-}
-
-// GET /potholes/:id
-export async function getPotholeById(id) {
-  if (USE_MOCK) {
-    await delay(250)
-    const found = mockPotholes.find((p) => p.id === id)
-    if (!found) throw new Error('Pothole not found')
-    return found
-  }
-  return request(`/potholes/${id}`)
-}
-
-// GET /potholes/stats
-export async function getStats() {
-  if (USE_MOCK) {
-    await delay(300)
-    const total = mockPotholes.length
-    const bySeverity = { low: 0, medium: 0, high: 0 }
-    const byStatus = { unresolved: 0, in_progress: 0, resolved: 0 }
-    mockPotholes.forEach((p) => {
-      bySeverity[p.severity] = (bySeverity[p.severity] || 0) + 1
-      byStatus[p.status] = (byStatus[p.status] || 0) + 1
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/potholes/unfixed`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
     })
-    return { total, bySeverity, byStatus }
-  }
-  return request('/potholes/stats')
-}
 
-// POST /potholes  (in production, sent by SIM800L via HTTP POST/GPRS)
-export async function reportPothole(payload) {
-  if (USE_MOCK) {
-    await delay(350)
-    return addMockPothole(payload)
-  }
-  return request('/potholes', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  })
-}
+    if (!res.ok) {
+      throw new Error(`API error ${res.status}: ${res.statusText}`)
+    }
 
-// PATCH /potholes/:id/status
-export async function updatePotholeStatus(id, status) {
-  if (USE_MOCK) {
-    await delay(250)
-    const record = mockPotholes.find((p) => p.id === id)
-    if (record) record.status = status
-    return record
-  }
-  return request(`/potholes/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status })
-  })
-}
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      throw new Error('Invalid response: expected JSON')
+    }
 
-// GET /devices
-export async function getDevices() {
-  if (USE_MOCK) {
-    await delay(200)
-    return mockDevices
+    /** @type {Pothole[]} */
+    const data = await res.json()
+    return data
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out — the backend may be unreachable')
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
   }
-  return request('/devices')
 }
