@@ -1,0 +1,98 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# =========================
+# Virtual Environment
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# uv
+# =========================
+.python-version
+
+# Keep uv.lock for reproducible builds
+# Uncomment the next line only if you DON'T want to track it
+# uv.lock
+
+# =========================
+# IDEs
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+*.pid
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Pytest / Coverage
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Build
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Uploaded Images
+# =========================
+uploads/
+temp/
+
+# =========================
+# Model Checkpoints
+# =========================
+checkpoints/
+runs/
+
+# Ignore trained models (optional)
+*.pth
+*.pt
+*.onnx
+*.tflite
+
+# Uncomment these if you WANT to keep models in Git
+#!models/
+#!models/*.pth
+
+# =========================
+# Misc
+# =========================
+*.sqlite3
+*.db
