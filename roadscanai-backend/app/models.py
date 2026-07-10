@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import Base
 
 
@@ -12,7 +12,9 @@ class Detection(Base):
     device_id = Column(String, nullable=False)
     seq = Column(Integer, nullable=False)
     timestamp = Column(DateTime, nullable=False)  # from GPS
-    received_at = Column(DateTime, default=datetime.utcnow)  # server-side receipt time
+    received_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )  # server-side receipt time
 
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
