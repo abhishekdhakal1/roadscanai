@@ -19,7 +19,7 @@ function Sidebar({
   error,
 }) {
   return (
-    <aside className="flex h-full w-[380px] flex-shrink-0 flex-col border-r border-concrete-200 bg-concrete-50">
+    <aside className="flex h-full w-[380px] flex-shrink-0 flex-col border-r border-concrete-200 bg-concrete-50 z-40 relative">
       <div className="p-5">
         <StatsPanel stats={stats} loading={loading} />
       </div>

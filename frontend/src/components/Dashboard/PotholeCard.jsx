@@ -13,14 +13,14 @@ function PotholeCard({ pothole, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-lg border px-3.5 py-3 text-left transition ${
+      className={`w-full rounded-md border px-4 py-3 text-left transition-colors duration-200 ${
         active
-          ? 'border-marking bg-marking/10'
-          : 'border-concrete-200 bg-white hover:border-asphalt-400'
+          ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+          : 'border-concrete-200 bg-white hover:border-concrete-300 hover:bg-concrete-50/50'
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="font-display text-sm font-semibold text-asphalt-900">
+        <p className="font-display text-sm font-semibold text-asphalt-800">
           Pothole #{pothole.id}
         </p>
         <SeverityBadge level={pothole.severity} />
