@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import Topbar from '../components/Layout/Topbar'
 import Sidebar from '../components/Layout/Sidebar'
 import PotholeMap from '../components/Map/PotholeMap'
@@ -21,6 +22,7 @@ function Dashboard() {
   const [sortBy, setSortBy] = useState('newest')
   const [searchId, setSearchId] = useState('')
   const [selectedId, setSelectedId] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters)
@@ -86,15 +88,18 @@ function Dashboard() {
   }, [potholes])
 
   return (
-    <div className="flex h-screen flex-col bg-concrete-50">
-      <Topbar lastSynced={lastSynced} />
+    <div className="flex h-screen flex-col bg-surface-bg">
+      <Topbar lastSynced={lastSynced} onMenuClick={() => setSidebarOpen(true)} />
 
       {error && (
-        <div className="flex items-center justify-between border-b border-severity-high/30 bg-severity-high/10 px-6 py-2 text-sm text-severity-high">
-          <span>{error} — showing last known data.</span>
+        <div className="flex items-center justify-between border-b border-danger/20 bg-danger/5 px-4 py-2.5 text-sm text-danger sm:px-6">
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={15} />
+            {error} — showing last known data.
+          </span>
           <button
             onClick={refresh}
-            className="ml-4 rounded-md border border-severity-high/40 px-3 py-1 text-xs font-mono uppercase tracking-wide transition hover:bg-severity-high/20"
+            className="ml-4 rounded-lg border border-danger/30 px-3 py-1 text-xs font-semibold transition-colors duration-150 hover:bg-danger/10"
           >
             Retry
           </button>
@@ -116,13 +121,17 @@ function Dashboard() {
           onSelect={handleSelect}
           onRetry={refresh}
           error={error}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
-        <main className="relative flex-1">
-          <PotholeMap
-            potholes={processed}
-            selectedId={selectedId}
-            onSelect={handleSelect}
-          />
+        <main className="relative flex-1 p-2 sm:p-3">
+          <div className="h-full w-full overflow-hidden rounded-2xl shadow-panel">
+            <PotholeMap
+              potholes={processed}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+            />
+          </div>
         </main>
       </div>
     </div>

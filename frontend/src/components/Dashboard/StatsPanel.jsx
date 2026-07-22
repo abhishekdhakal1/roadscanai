@@ -1,50 +1,26 @@
-import { memo, useMemo } from 'react'
-import { SEVERITY } from '../../utils/severity'
+import { memo } from 'react'
+import { Activity, AlertTriangle, ShieldAlert, ShieldCheck, Gauge, Clock } from 'lucide-react'
 import { formatTimestamp } from '../../utils/formatters'
 
-function Sparkline({ color, data }) {
-  const max = Math.max(...data)
-  const min = Math.min(...data)
-  const range = max - min || 1
-  
-  const points = data.map((val, i) => {
-    const x = (i / (data.length - 1)) * 100
-    const y = 30 - ((val - min) / range) * 30
-    return `${x},${y}`
-  }).join(' ')
-
+function StatCard({ icon: Icon, label, value, accent, loading }) {
   return (
-    <svg viewBox="0 -5 100 40" className="w-14 h-6 overflow-visible opacity-60" preserveAspectRatio="none">
-      <polyline
-        fill="none"
-        stroke={color || '#64748B'}
-        strokeWidth="1.5"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-        points={points}
-      />
-    </svg>
-  )
-}
-
-function StatCard({ label, value, color, loading, showTrend = false }) {
-  // Simulated 7-day trend data for visual effect
-  const trendData = useMemo(() => Array.from({ length: 7 }, () => Math.floor(Math.random() * 15) + 5), [])
-
-  return (
-    <div className="rounded-md bg-white px-3 py-2.5 flex flex-col justify-between shadow-sm">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-asphalt-500">{label}</p>
-      <div className="flex items-end justify-between mt-1.5">
-        <p
-          className="text-xl font-bold tracking-tight"
-          style={{ color: color || '#1E293B' }}
-        >
-          {loading ? '—' : value}
-        </p>
-        {showTrend && !loading && (
-          <Sparkline color={color} data={trendData} />
-        )}
+    <div className="group rounded-2xl border border-surface-border bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
+      <div
+        className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg"
+        style={{ backgroundColor: `${accent}14`, color: accent }}
+      >
+        <Icon size={16} strokeWidth={2.25} />
       </div>
+      <p
+        className="text-[13px] font-bold leading-tight tracking-tight text-text-primary"
+      >
+        {loading ? (
+          <span className="skeleton inline-block h-6 w-14 rounded-md align-middle" />
+        ) : (
+          <span className="text-[22px]">{value}</span>
+        )}
+      </p>
+      <p className="mt-1 text-[12px] font-medium text-text-secondary">{label}</p>
     </div>
   )
 }
@@ -58,40 +34,26 @@ function StatCard({ label, value, color, loading, showTrend = false }) {
 function StatsPanel({ stats, loading }) {
   return (
     <div>
-      <p className="mb-3 text-[11px] font-mono uppercase tracking-wider text-asphalt-500">
+      <p className="mb-3 text-[16px] font-semibold text-text-primary">
         Network Overview
       </p>
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Total Active" value={stats?.total ?? 0} loading={loading} showTrend />
+        <StatCard icon={Activity} label="Total Active" value={stats?.total ?? 0} accent="#2563EB" loading={loading} />
+        <StatCard icon={AlertTriangle} label="High Severity" value={stats?.high ?? 0} accent="#EF4444" loading={loading} />
+        <StatCard icon={ShieldAlert} label="Medium Severity" value={stats?.medium ?? 0} accent="#F59E0B" loading={loading} />
+        <StatCard icon={ShieldCheck} label="Low Severity" value={stats?.low ?? 0} accent="#22C55E" loading={loading} />
         <StatCard
-          label="High Severity"
-          value={stats?.high ?? 0}
-          color={SEVERITY.high.hex}
-          loading={loading}
-          showTrend
-        />
-        <StatCard
-          label="Medium Severity"
-          value={stats?.medium ?? 0}
-          color={SEVERITY.medium.hex}
-          loading={loading}
-          showTrend
-        />
-        <StatCard
-          label="Low Severity"
-          value={stats?.low ?? 0}
-          color={SEVERITY.low.hex}
-          loading={loading}
-          showTrend
-        />
-        <StatCard
+          icon={Gauge}
           label="Avg Confidence"
           value={stats?.avgConfidence ? `${(stats.avgConfidence * 100).toFixed(0)}%` : '—'}
+          accent="#2563EB"
           loading={loading}
         />
         <StatCard
+          icon={Clock}
           label="Latest Detection"
           value={stats?.latestDetection ? formatTimestamp(stats.latestDetection) : '—'}
+          accent="#64748B"
           loading={loading}
         />
       </div>

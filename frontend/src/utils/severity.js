@@ -5,21 +5,21 @@
 export const SEVERITY = {
   low: {
     label: 'Low',
-    hex: '#4C9A6A',
+    hex: '#22C55E',
     tailwindBg: 'bg-severity-low',
     tailwindText: 'text-severity-low',
     description: 'Minor surface wear, no immediate action required'
   },
   medium: {
     label: 'Medium',
-    hex: '#E0A030',
+    hex: '#F59E0B',
     tailwindBg: 'bg-severity-medium',
     tailwindText: 'text-severity-medium',
     description: 'Noticeable depth, schedule for repair'
   },
   high: {
     label: 'High',
-    hex: '#D1483B',
+    hex: '#EF4444',
     tailwindBg: 'bg-severity-high',
     tailwindText: 'text-severity-high',
     description: 'Deep or wide pothole, hazardous to vehicles'

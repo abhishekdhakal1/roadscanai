@@ -6,10 +6,20 @@ html, body, #root {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #1E293B;
+  color: #0F172A;
   background-color: #F8FAFC;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
 }
 
 /* Leaflet container must have explicit height */
@@ -21,13 +31,28 @@ body {
 }
 
 .leaflet-popup-content-wrapper {
-  border-radius: 10px;
-  box-shadow: 0 8px 24px -8px rgba(20, 24, 26, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.25), 0 2px 8px -2px rgba(15, 23, 42, 0.1);
 }
 
 .leaflet-popup-content {
   margin: 0;
-  min-width: 200px;
+  min-width: 220px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+.leaflet-control-zoom {
+  border-radius: 10px !important;
+  overflow: hidden;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.1) !important;
+}
+
+.leaflet-control-zoom a {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 /* Pothole marker pin */
@@ -38,8 +63,8 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 9999px;
-  border: 3px solid #F6F7F5;
-  box-shadow: 0 2px 6px rgba(20, 24, 26, 0.4);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
 }
 
 .pothole-pin::after {
@@ -47,7 +72,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* Live pulse dot */
@@ -66,27 +91,64 @@ body {
   animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Road-marking dashed divider, the signature motif */
-.road-divider {
-  height: 3px;
-  background-image: repeating-linear-gradient(
-    90deg,
-    #FFC93C 0,
-    #FFC93C 16px,
-    transparent 16px,
-    transparent 30px
-  );
-  opacity: 0.9;
-}
-
 /* Scrollbar tuning for feed panel */
 .feed-scroll::-webkit-scrollbar {
   width: 6px;
 }
 .feed-scroll::-webkit-scrollbar-thumb {
-  background: #E1E4DF;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 .feed-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Skeleton shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Modern range slider */
+input[type='range'].modern-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: #E2E8F0;
+  outline: none;
+}
+
+input[type='range'].modern-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #2563EB;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+input[type='range'].modern-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type='range'].modern-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #2563EB;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+}
+
