@@ -4,10 +4,7 @@ import org.example.backendspring.model.Pothole;
 import org.example.backendspring.repositories.PotholeRepos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,6 +21,7 @@ public class PotholeController {
                 .body(potholeRepos.findAll());
     }
 
+    @PostMapping("add")
     public void addPothole(@RequestBody Pothole pothole){
         potholeRepos.save(pothole);
     }
