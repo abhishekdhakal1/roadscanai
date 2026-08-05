@@ -31,8 +31,8 @@ constexpr int NUM_CLASSES = 4;
 #define SEND_HTTP_ALERT false
 
 // Wi-Fi Credentials
-#define WIFI_SSID     "BNBBOYS567_2.4"
-#define WIFI_PASSWORD "BNBBOYS@123"
+#define WIFI_SSID     "ALHN-34BA"
+#define WIFI_PASSWORD "CKt4ffm2H9"
 
 // Database / API Endpoint
 #define API_SERVER_URL "https://your-api-endpoint.com/api/data"

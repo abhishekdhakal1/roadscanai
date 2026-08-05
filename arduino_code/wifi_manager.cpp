@@ -1,4 +1,5 @@
 #include "wifi_manager.h"
+#include "model.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 
@@ -27,8 +28,12 @@ bool isWiFiConnected() {
     return (WiFi.status() == WL_CONNECTED);
 }
 
-bool sendInferenceData(const char* serverUrl, const String& label, float confidence, const String& gpsCoords) {
-    if (!isWiFiConnected()) {
+bool sendInferenceData(const char* serverUrl,
+                       const InferenceResult& result,
+                       const String& gpsCoords)
+{
+    if (!isWiFiConnected())
+    {
         Serial.println("[WiFi] Cannot send data: Disconnected.");
         return false;
     }
@@ -37,21 +42,29 @@ bool sendInferenceData(const char* serverUrl, const String& label, float confide
     http.begin(serverUrl);
     http.addHeader("Content-Type", "application/json");
 
-    // Construct JSON containing label, confidence, and GPS coordinates
     String jsonPayload = "{";
-    jsonPayload += "\"label\":\"" + label + "\",";
-    jsonPayload += "\"confidence\":" + String(confidence, 4) + ",";
+    jsonPayload += "\"class_index\":" + String(result.class_index) + ",";
+    jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
+    jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
+    jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
     jsonPayload += "\"gps\":\"" + gpsCoords + "\"";
     jsonPayload += "}";
 
     int httpResponseCode = http.POST(jsonPayload);
+
     bool success = false;
 
-    if (httpResponseCode > 0) {
+    if (httpResponseCode > 0)
+    {
         Serial.printf("[HTTP] POST success, Response code: %d\n", httpResponseCode);
+        Serial.println("[HTTP] Payload:");
+        Serial.println(jsonPayload);
         success = true;
-    } else {
-        Serial.printf("[HTTP] POST failed, Error: %s\n", http.errorToString(httpResponseCode).c_str());
+    }
+    else
+    {
+        Serial.printf("[HTTP] POST failed, Error: %s\n",
+                      http.errorToString(httpResponseCode).c_str());
     }
 
     http.end();
