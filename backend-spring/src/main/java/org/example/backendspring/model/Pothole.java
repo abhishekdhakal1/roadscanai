@@ -12,6 +12,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Pothole {
     private String class_name;
     private float probability;
-    private float inference_time_ms;
+    private int inference_time_ms;
     private String gps;
 }

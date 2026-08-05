@@ -35,6 +35,6 @@ constexpr int NUM_CLASSES = 4;
 #define WIFI_PASSWORD "CKt4ffm2H9"
 
 // Database / API Endpoint
-#define API_SERVER_URL "https://your-api-endpoint.com/api/data"
+#define API_SERVER_URL "http://192.168.1.113:8086/api/add"
 
 #endif // CONFIG_H
