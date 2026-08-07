@@ -1,294 +1,196 @@
 #include "gsm.h"
 #include <HardwareSerial.h>
 
-// GSM module serial connection
-static HardwareSerial *gsmSerial = nullptr;
+static HardwareSerial gsmSerial(2); // UART2 - keep UART1 free for GPS
+static bool gprsAttached = false;
+static String savedApn, savedApnUser, savedApnPass;
 
-// Helper function to send AT command and wait for response
-static String sendATCommand(String command, unsigned long timeout = 1000)
+// ---------- low-level AT helper ----------
+
+// Sends a command, waits up to timeout_ms for one of the expected tokens
+// to appear in the response. Returns the full response via 'response' if
+// non-null. Returns true if any expected token was found.
+static bool sendAT(const String& cmd, const char* expect1 = "OK",
+                    const char* expect2 = nullptr,
+                    unsigned long timeout_ms = 3000,
+                    String* response = nullptr)
 {
-    if (!gsmSerial)
-    {
-        return "";
+    while (gsmSerial.available()) gsmSerial.read(); // flush stale bytes
+
+    if (cmd.length()) {
+        gsmSerial.print(cmd);
+        gsmSerial.print("\r\n");
     }
 
-    gsmSerial->println(command);
-    String response = "";
+    String buf;
     unsigned long start = millis();
+    bool found = false;
 
-    while (millis() - start < timeout)
-    {
-        if (gsmSerial->available())
-        {
-            char c = gsmSerial->read();
-            response += c;
+    while (millis() - start < timeout_ms) {
+        while (gsmSerial.available()) {
+            char c = (char)gsmSerial.read();
+            buf += c;
+            if (expect1 && buf.indexOf(expect1) != -1) { found = true; }
+            if (expect2 && buf.indexOf(expect2) != -1) { found = true; }
         }
+        if (found) break;
+        delay(10);
     }
 
-    return response;
+    if (response) *response = buf;
+    return found;
 }
 
-// Helper function to check if response contains expected string
-static bool waitForResponse(String response, String expected, unsigned long timeout = 3000)
+// ---------- init ----------
+
+bool initGSM(int rx_pin, int tx_pin, int baud_rate, const char* apn,
+             const char* apn_user, const char* apn_pass)
 {
-    if (!gsmSerial)
-    {
+    savedApn = apn;
+    savedApnUser = apn_user ? apn_user : "";
+    savedApnPass = apn_pass ? apn_pass : "";
+
+    gsmSerial.begin((uint32_t)baud_rate, SERIAL_8N1, rx_pin, tx_pin);
+    delay(3000); // SIM800 boot settle time
+
+    Serial.println("[GSM] Handshaking...");
+    bool ok = false;
+    for (int i = 0; i < 5 && !ok; i++) {
+        ok = sendAT("AT", "OK", nullptr, 1000);
+        if (!ok) delay(500);
+    }
+    if (!ok) {
+        Serial.println("[GSM] Module not responding.");
         return false;
     }
 
-    unsigned long start = millis();
-    String buffer = "";
+    sendAT("ATE0");                  // echo off, keeps parsing simple
+    sendAT("AT+CFUN=1", "OK", nullptr, 5000);
 
-    while (millis() - start < timeout)
-    {
-        if (gsmSerial->available())
-        {
-            char c = gsmSerial->read();
-            buffer += c;
-
-            if (buffer.indexOf(expected) != -1)
-            {
-                return true;
-            }
+    // Wait for network registration (home or roaming)
+    Serial.println("[GSM] Waiting for network registration...");
+    bool registered = false;
+    unsigned long regStart = millis();
+    while (millis() - regStart < 20000) {
+        String resp;
+        sendAT("AT+CREG?", "OK", nullptr, 2000, &resp);
+        if (resp.indexOf(",1") != -1 || resp.indexOf(",5") != -1) {
+            registered = true;
+            break;
         }
+        delay(1000);
     }
+    if (!registered) {
+        Serial.println("[GSM] Network registration failed.");
+        return false;
+    }
+    Serial.println("[GSM] Registered on network.");
 
-    return false;
-}
+    // Tear down any stale bearer/GPRS context before reattaching
+    sendAT("AT+CIPSHUT", "SHUT OK", nullptr, 5000);
+    sendAT("AT+CGATT=1", "OK", nullptr, 10000);
 
-bool initGSM(int rx_pin, int tx_pin, uint32_t baud_rate)
-{
-    Serial.println("\n--- GSM Module Initialization ---");
+    sendAT("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");
+    sendAT("AT+SAPBR=3,1,\"APN\",\"" + savedApn + "\"");
+    if (savedApnUser.length()) sendAT("AT+SAPBR=3,1,\"USER\",\"" + savedApnUser + "\"");
+    if (savedApnPass.length()) sendAT("AT+SAPBR=3,1,\"PWD\",\""  + savedApnPass + "\"");
 
-    // Initialize serial connection for GSM
-    // Using UART2 for GSM
-    gsmSerial = new HardwareSerial(2);
-    gsmSerial->begin(baud_rate, SERIAL_8N1, rx_pin, tx_pin);
-
-    if (!gsmSerial)
-    {
-        Serial.println("GSM serial initialization failed");
+    bool bearerOk = sendAT("AT+SAPBR=1,1", "OK", "ERROR", 10000); // open GPRS bearer
+    if (!bearerOk) {
+        Serial.println("[GSM] Failed to open GPRS bearer.");
         return false;
     }
 
-    delay(1000);
+    String ipResp;
+    sendAT("AT+SAPBR=2,1", "OK", nullptr, 5000, &ipResp); // query, prints assigned IP
+    Serial.print("[GSM] Bearer status: ");
+    Serial.println(ipResp);
 
-    // Test AT command
-    String response = sendATCommand("AT", 1000);
-    if (response.indexOf("OK") == -1)
-    {
-        Serial.println("GSM module not responding to AT command");
-        return false;
-    }
-
-    // Disable echo
-    sendATCommand("ATE0", 1000);
-
-    // Get module info
-    response = sendATCommand("ATI", 1000);
-    Serial.print("Module Info: ");
-    Serial.println(response);
-
-    // Set text mode for SMS
-    sendATCommand("AT+CMGF=1", 1000);
-
-    Serial.println("GSM module initialized on UART2");
-    Serial.printf("RX: GPIO%d, TX: GPIO%d, Baud: %lu\n", rx_pin, tx_pin, baud_rate);
-
+    gprsAttached = true;
+    Serial.println("[GSM] GPRS attached.");
     return true;
 }
 
-GSMStatus getGSMStatus()
+bool isGSMConnected()
 {
-    GSMStatus status;
-    status.initialized = false;
-    status.network_registered = false;
-    status.signal_strength = 0;
-    status.operator_name = "Unknown";
-
-    if (!gsmSerial)
-    {
-        return status;
-    }
-
-    status.initialized = true;
-
-    // Check network registration
-    String response = sendATCommand("AT+CREG?", 1000);
-
-    // Parse network registration status
-    // Response format: +CREG: <n>,<stat>[,<lac>,<ci>]
-    if (response.indexOf("+CREG:") != -1)
-    {
-        // Check for values 1 (registered, home) or 5 (registered, roaming)
-        if (response.indexOf(",1") != -1 || response.indexOf(",5") != -1)
-        {
-            status.network_registered = true;
-        }
-    }
-
-    // Get signal strength
-    response = sendATCommand("AT+CSQ", 1000);
-    // Response format: +CSQ: <rssi>,<ber>
-    if (response.indexOf("+CSQ:") != -1)
-    {
-        int start = response.indexOf(": ") + 2;
-        int end = response.indexOf(",", start);
-        if (start > 1 && end > start)
-        {
-            String rssi_str = response.substring(start, end);
-            status.signal_strength = rssi_str.toInt();
-        }
-    }
-
-    // Get operator name
-    response = sendATCommand("AT+COPS?", 1000);
-    if (response.indexOf("+COPS:") != -1)
-    {
-        int start = response.indexOf("\"") + 1;
-        int end = response.indexOf("\"", start);
-        if (start > 0 && end > start)
-        {
-            status.operator_name = response.substring(start, end);
-        }
-    }
-
-    return status;
+    if (!gprsAttached) return false;
+    String resp;
+    sendAT("AT+SAPBR=2,1", "OK", nullptr, 3000, &resp);
+    // Response like: +SAPBR: 1,1,"10.x.x.x"  -> state 1 = connected
+    int stateIdx = resp.indexOf("+SAPBR:");
+    if (stateIdx == -1) return false;
+    return resp.indexOf(",1,\"") != -1;
 }
 
-bool sendSMS(String phone_number, String message)
+// ---------- HTTP POST via SIM800's internal HTTP stack ----------
+
+bool sendInferenceDataGSM(const char* serverUrl,
+                           const InferenceResult& result,
+                           const String& gpsCoords)
 {
-    if (!gsmSerial)
-    {
-        Serial.println("GSM module not initialized");
+    if (!gprsAttached) {
+        Serial.println("[GSM] Cannot send data: GPRS not attached.");
         return false;
     }
 
-    Serial.printf("Sending SMS to %s: %s\n", phone_number.c_str(), message.c_str());
+    String jsonPayload = "{";
+    jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
+    jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
+    jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
+    jsonPayload += "\"gps\":\"" + gpsCoords + "\"";
+    jsonPayload += "}";
 
-    // Set SMS recipient
-    String cmd = "AT+CMGS=\"" + phone_number + "\"";
-    gsmSerial->println(cmd);
-    delay(500);
+    sendAT("AT+HTTPTERM"); // clear any leftover session, ignore result
 
-    // Send message
-    gsmSerial->print(message);
-    gsmSerial->write(0x1A); // Ctrl+Z to send
-
-    // Wait for response
-    unsigned long start = millis();
-    while (millis() - start < 5000)
-    {
-        if (gsmSerial->available())
-        {
-            String response = "";
-            while (gsmSerial->available())
-            {
-                response += (char)gsmSerial->read();
-            }
-
-            if (response.indexOf("+CMGS:") != -1 || response.indexOf("OK") != -1)
-            {
-                Serial.println("SMS sent successfully");
-                return true;
-            }
-        }
-    }
-
-    Serial.println("SMS send failed or timed out");
-    return false;
-}
-
-bool sendHTTPPost(String server_url, String post_data)
-{
-    if (!gsmSerial)
-    {
-        Serial.println("GSM module not initialized");
+    if (!sendAT("AT+HTTPINIT", "OK", "ERROR", 3000)) {
+        Serial.println("[GSM] HTTPINIT failed.");
         return false;
     }
 
-    Serial.printf("Sending HTTP POST to: %s\n", server_url.c_str());
-    Serial.printf("Data: %s\n", post_data.c_str());
+    sendAT("AT+HTTPPARA=\"CID\",1");
+    sendAT("AT+HTTPPARA=\"URL\",\"" + String(serverUrl) + "\"");
+    sendAT("AT+HTTPPARA=\"CONTENT\",\"application/json\"");
 
-    // Enable GPRS connection
-    sendATCommand("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"", 2000);
-    sendATCommand("AT+SAPBR=3,1,\"APN\",\"internet\"", 2000);
-    sendATCommand("AT+SAPBR=1,1", 3000);
-
-    delay(1000);
-
-    // Initialize HTTP service
-    sendATCommand("AT+HTTPINIT", 2000);
-
-    // Set HTTP parameters
-    String bearer_cmd = "AT+HTTPPARA=\"CID\",1";
-    sendATCommand(bearer_cmd, 1000);
-
-    // Set content type to JSON
-    sendATCommand("AT+HTTPPARA=\"CONTENT\",\"application/json\"", 1000);
-
-    // Set URL
-    String url_cmd = "AT+HTTPPARA=\"URL\",\"" + server_url + "\"";
-    sendATCommand(url_cmd, 2000);
-
-    // Send POST data
-    String data_len_cmd = "AT+HTTPDATA=" + String(post_data.length()) + ",10000";
-    gsmSerial->println(data_len_cmd);
-    delay(500);
-
-    // Wait for DOWNLOAD response
-    unsigned long start = millis();
-    bool download_ready = false;
-    while (millis() - start < 5000)
-    {
-        if (gsmSerial->available())
-        {
-            String response = "";
-            while (gsmSerial->available())
-            {
-                response += (char)gsmSerial->read();
-            }
-            if (response.indexOf("DOWNLOAD") != -1)
-            {
-                download_ready = true;
-                break;
-            }
-        }
+    // Push the payload into the module's internal buffer
+    String dataCmd = "AT+HTTPDATA=" + String(jsonPayload.length()) + ",10000";
+    if (!sendAT(dataCmd, "DOWNLOAD", nullptr, 3000)) {
+        Serial.println("[GSM] HTTPDATA prompt not received.");
+        sendAT("AT+HTTPTERM");
+        return false;
     }
+    sendAT(jsonPayload, "OK", nullptr, 10000);
 
-    if (!download_ready)
-    {
-        Serial.println("Failed to get DOWNLOAD prompt from GSM module");
-        sendATCommand("AT+HTTPTERM", 1000);
+    // Fire the POST (method 1 = POST)
+    String actionResp;
+    bool actionOk = sendAT("AT+HTTPACTION=1", "+HTTPACTION:", nullptr, 15000, &actionResp);
+    if (!actionOk) {
+        Serial.println("[GSM] HTTPACTION did not return in time.");
+        sendAT("AT+HTTPTERM");
         return false;
     }
 
-    // Send POST data
-    gsmSerial->print(post_data);
-    delay(500);
-
-    // Execute POST request
-    String response = sendATCommand("AT+HTTPACTION=1", 5000);
-
-    // Check response
-    if (response.indexOf("+HTTPACTION: 1") != -1 && response.indexOf("200") != -1)
-    {
-        Serial.println("HTTP POST request successful (HTTP 200)");
-        sendATCommand("AT+HTTPTERM", 1000);
-        return true;
+    // actionResp contains a line like: +HTTPACTION: 1,200,123
+    // fields: method, http_status_code, response_data_length
+    int statusCode = -1;
+    int idx = actionResp.indexOf("+HTTPACTION:");
+    if (idx != -1) {
+        int firstComma = actionResp.indexOf(',', idx);
+        int secondComma = actionResp.indexOf(',', firstComma + 1);
+        if (firstComma != -1 && secondComma != -1) {
+            statusCode = actionResp.substring(firstComma + 1, secondComma).toInt();
+        }
     }
 
-    Serial.println("HTTP POST request failed");
-    sendATCommand("AT+HTTPTERM", 1000);
-    return false;
-}
+    bool success = (statusCode >= 200 && statusCode < 300);
 
-void closeGSM()
-{
-    if (gsmSerial)
-    {
-        sendATCommand("AT+HTTPTERM", 1000);
-        sendATCommand("AT+SAPBR=0,1", 1000);
-        Serial.println("GSM connection closed");
+    if (success) {
+        Serial.printf("[GSM] POST success, HTTP status: %d\n", statusCode);
+        Serial.println("[GSM] Payload:");
+        Serial.println(jsonPayload);
+    } else {
+        Serial.printf("[GSM] POST failed, HTTP status: %d\n", statusCode);
     }
+
+    sendAT("AT+HTTPTERM"); // always release the HTTP session
+    return success;
 }

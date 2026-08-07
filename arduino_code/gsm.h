@@ -2,42 +2,22 @@
 #define GSM_H
 
 #include <Arduino.h>
+#include "model.h"  // for InferenceResult
 
-// Structure to hold GSM module status
-struct GSMStatus
-{
-    bool initialized;
-    bool network_registered;
-    int signal_strength; // 0-31 (31 is strongest)
-    String operator_name;
-};
+// Call once in setup(). rx_pin/tx_pin are ESP32 pins wired to SIM800's TX/RX
+// (cross-connected: ESP32 RX <- SIM800 TX, ESP32 TX -> SIM800 RX).
+// Returns true if the module responded and registered on the network.
+bool initGSM(int rx_pin, int tx_pin, int baud_rate, const char* apn,
+             const char* apn_user = "", const char* apn_pass = "");
 
-// Initialize GSM module
-// Parameters:
-//   - rx_pin: RX pin for UART connection
-//   - tx_pin: TX pin for UART connection
-//   - baud_rate: Serial baud rate (typically 9600 for SIM800L)
-bool initGSM(int rx_pin, int tx_pin, uint32_t baud_rate);
+// Quick check: module responsive + GPRS context still up.
+bool isGSMConnected();
 
-// Get GSM module status
-// Returns: GSMStatus structure with current module information
-GSMStatus getGSMStatus();
+// Sends the same payload shape as sendInferenceData() over HTTP via the
+// SIM800's internal TCP/IP+HTTP stack (AT+HTTPINIT etc.), not a socket you
+// manage yourself.
+bool sendInferenceDataGSM(const char* serverUrl,
+                           const InferenceResult& result,
+                           const String& gpsCoords);
 
-// Send SMS message via GSM module
-// Parameters:
-//   - phone_number: Destination phone number (e.g., "+1234567890")
-//   - message: SMS message content (max 160 characters)
-// Returns: true if SMS sent successfully, false otherwise
-bool sendSMS(String phone_number, String message);
-
-// Send HTTP POST request with pothole alert data
-// Parameters:
-//   - server_url: Full URL including protocol (e.g., "http://example.com/alert")
-//   - post_data: JSON data to send
-// Returns: true if request sent successfully, false otherwise
-bool sendHTTPPost(String server_url, String post_data);
-
-// Close GSM connection
-void closeGSM();
-
-#endif // GSM_H
+#endif
