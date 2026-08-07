@@ -8,6 +8,7 @@ static bool gpsInitialized = false;
 
 bool initGPS(int rx_pin, int tx_pin, int baud_rate)
 {
+    gpsSerial.setRxBufferSize(8192);
     gpsSerial.begin((uint32_t)baud_rate, SERIAL_8N1, rx_pin, tx_pin);
     delay(200);
 
@@ -61,9 +62,8 @@ bool hasGPSFix()
     return gps.location.isValid();
 }
 
-String getGPSCoordinates()
+String getGPSCoordinates(GPSData d)
 {
-    GPSData d = readGPS();
     if (!d.fix_valid)
     {
         return "NO_FIX";

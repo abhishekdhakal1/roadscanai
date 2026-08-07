@@ -85,7 +85,7 @@ void loop() {
   // Always query GPS
   GPSData gps_data = readGPS();
   bool gps_fix = hasGPSFix() || gps_data.fix_valid;
-  String gps_coords = getGPSCoordinates();
+  String gps_coords = getGPSCoordinates(d);
 
   Serial.printf("[GPS] Working: %s | Fix: %s | Sats: %d\n",
                 (gps_data.satellite_count > 0 || gps_fix) ? "YES" : "NO",
