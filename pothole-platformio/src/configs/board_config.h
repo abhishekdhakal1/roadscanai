@@ -3,6 +3,6 @@
 
 #define CAMERA_MODEL_ESP32S3_EYE
 
-#include "camera_pins.h"
+#include "../camera/camera_pins.h"
 
 #endif  // BOARD_CONFIG_

@@ -1,6 +1,6 @@
 #include "camera.h"
-#include "config.h"
-#include "board_config.h"
+#include "../configs/config.h"
+#include "configs/board_config.h"
 
 bool initCamera() {
   camera_config_t config;

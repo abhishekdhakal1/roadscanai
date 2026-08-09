@@ -2,7 +2,7 @@
 #define GSM_H
 
 #include <Arduino.h>
-#include "model.h"  // for InferenceResult
+#include "../model/model.h"  // for InferenceResult
 
 // Call once in setup(). rx_pin/tx_pin are ESP32 pins wired to SIM800's TX/RX
 // (cross-connected: ESP32 RX <- SIM800 TX, ESP32 TX -> SIM800 RX).

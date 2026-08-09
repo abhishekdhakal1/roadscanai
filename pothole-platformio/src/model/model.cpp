@@ -1,5 +1,5 @@
 #include "model.h"
-#include "config.h"
+#include "../configs/config.h"
 #include "model_data.h"  // generated from model.tflite
 #include <MicroTFLite.h> // library for tflite model inference
 #include <cmath>         // for expf() used in softmax

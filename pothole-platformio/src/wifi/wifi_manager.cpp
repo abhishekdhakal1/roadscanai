@@ -1,5 +1,5 @@
 #include "wifi_manager.h"
-#include "model.h"
+#include "../model/model.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 

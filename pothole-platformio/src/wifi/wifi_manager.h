@@ -2,7 +2,7 @@
 #define WIFI_MANAGER_H
 
 #include <Arduino.h>
-#include "model.h"
+#include "../model/model.h"
 
 void initWiFi(const char* ssid, const char* password);
 bool isWiFiConnected();

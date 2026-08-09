@@ -23,6 +23,6 @@ GPSData readGPS();
 bool hasGPSFix();
 
 // Simply returns latitude and longitude upto 6 decimal places as a comma separated string
-String getGPSCoordinates();
+String getGPSCoordinates(GPSData d);
 
 #endif // GPS_H
