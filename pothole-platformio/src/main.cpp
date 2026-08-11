@@ -8,6 +8,28 @@
 static unsigned long last_alert_time = 0;
 static const unsigned long ALERT_COOLDOWN_MS = 5000;
 
+void runInferenceTask(void *parameter){}
+
+void sendPOSTRequestTask(void *parameter){}
+
+void getGPSDataTask(void *parameter){
+
+  // Initialize GPS Module when the task starts for the first time 
+  if (!initGPS(GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE)) {
+      Serial.println("Warning: GPS init failed.");
+  }
+
+  for(;;){
+
+     GPSData gps_data = readGPS();
+      bool gps_fix = hasGPSFix() || gps_data.fix_valid;
+      String gps_coords = getGPSCoordinates(gps_data);
+
+  }
+
+}
+
+
 void setup() {
   Serial.begin(SERIAL_BAUDRATE);
 
