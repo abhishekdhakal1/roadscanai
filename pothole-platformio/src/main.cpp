@@ -3,48 +3,55 @@
 #include "model/model.h"
 #include "gps/gps.h"
 #include "wifi/wifi_manager.h"
-// #include "gsm/gsm.h" 
+#include "gsm/gsm.h"
 
 static unsigned long last_alert_time = 0;
 static const unsigned long ALERT_COOLDOWN_MS = 5000;
 
-// gpsDataQueue only holds the latest GPSData struct 
+// gpsDataQueue only holds the latest GPSData struct
 QueueHandle_t gpsDataQueue;
 QueueHandle_t inferenceDataQueue;
 
 #define GPS_COORDS_MAXLEN 32
 
 // AlertData struct to synchronize inference results and GPS coordinates between tasks
-typedef struct {
+typedef struct
+{
   InferenceResult inference;
   char gps_coords[GPS_COORDS_MAXLEN];
 } AlertData;
 
-void runInferenceTask(void *parameter) {
-  if (!psramInit()) {
+void runInferenceTask(void *parameter)
+{
+  if (!psramInit())
+  {
     Serial.println("System halt: PSRAM init failed.");
     while (true)
       delay(1000);
   }
   Serial.printf("PSRAM initialized. Total size: %d bytes\n", ESP.getPsramSize());
 
-  if (!initCamera()) {
+  if (!initCamera())
+  {
     Serial.println("System halt: Camera init failed.");
     while (true)
       delay(1000);
   }
 
-  if (!initModel()) {
+  if (!initModel())
+  {
     Serial.println("System halt: Model init failed.");
     while (true)
       delay(1000);
   }
 
-  for (;;) {
+  for (;;)
+  {
     unsigned long loop_start = millis();
 
     camera_fb_t *fb = captureFrame();
-    if (!fb) {
+    if (!fb)
+    {
       Serial.println("Frame capture failed");
       delay(1000);
       continue;
@@ -54,14 +61,16 @@ void runInferenceTask(void *parameter) {
     Serial.printf(">> Photo captured: %dx%d, %u bytes\n", fb->width, fb->height, fb->len);
 
     uint8_t *rgb_matrix = (uint8_t *)ps_malloc(fb->width * fb->height * 3);
-    if (!rgb_matrix) {
+    if (!rgb_matrix)
+    {
       Serial.println("RGB allocation failed");
       releaseFrame(fb);
       delay(1000);
       continue;
     }
 
-    if (!fmt2rgb888(fb->buf, fb->len, fb->format, rgb_matrix)) {
+    if (!fmt2rgb888(fb->buf, fb->len, fb->format, rgb_matrix))
+    {
       Serial.println("JPEG->RGB conversion failed");
       free(rgb_matrix);
       releaseFrame(fb);
@@ -92,9 +101,11 @@ void runInferenceTask(void *parameter) {
     // pothole = anything except "Normal"
     bool is_pothole = (strcmp(inference.class_name, "Normal") != 0);
 
-    if (is_pothole) {
+    if (is_pothole)
+    {
       unsigned long current_time = millis();
-      if (current_time - last_alert_time >= ALERT_COOLDOWN_MS) {
+      if (current_time - last_alert_time >= ALERT_COOLDOWN_MS)
+      {
         Serial.println("\n========== POTHOLE ALERT ==========");
         Serial.printf("Detection: %s (%.2f%%)\n", inference.class_name, inference.probability * 100.0f);
         Serial.printf("GPS: %s\n", gps_coords.c_str());
@@ -106,13 +117,16 @@ void runInferenceTask(void *parameter) {
         strncpy(alert.gps_coords, gps_coords.c_str(), GPS_COORDS_MAXLEN - 1);
         alert.gps_coords[GPS_COORDS_MAXLEN - 1] = '\0';
 
-        // Send the inference result and GPS coordinates to the sendPOSTRequestTask 
-        if (xQueueSend(inferenceDataQueue, &alert, 0) != pdTRUE) {
+        // Send the inference result and GPS coordinates to the sendPOSTRequestTask
+        if (xQueueSend(inferenceDataQueue, &alert, 0) != pdTRUE)
+        {
           Serial.println("Warning: inferenceDataQueue full, dropping alert");
         }
 
         Serial.println("==================================\n");
-      } else {
+      }
+      else
+      {
         Serial.printf("Pothole detected, cooldown active (%lu ms left)\n\n",
                       ALERT_COOLDOWN_MS - (current_time - last_alert_time));
       }
@@ -136,31 +150,45 @@ void runInferenceTask(void *parameter) {
   }
 }
 
-void sendPOSTRequestTask(void *parameter) {
+void sendPOSTRequestTask(void *parameter)
+{
   initWiFi(WIFI_SSID, WIFI_PASSWORD);
+  initGSM(GSM_RX_PIN, GSM_TX_PIN, GSM_BAUD_RATE, "ntnet");
 
   AlertData alert;
-  for (;;) {
-    if (xQueueReceive(inferenceDataQueue, &alert, portMAX_DELAY) == pdTRUE) {
-      String gps_coords(alert.gps_coords);
-      sendInferenceData(API_SERVER_URL, alert.inference, gps_coords);
+  for (;;)
+  {
+    if (xQueueReceive(inferenceDataQueue, &alert, portMAX_DELAY)!=pdTRUE)
+      continue;
+
+    if (isGSMConnected())
+    {
+      sendInferenceDataGSM(API_SERVER_URL, alert.inference, alert.gps_coords);
+    }
+    else if (isWiFiConnected())
+    {
+        sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_coords);
+      
     }
   }
 }
 
-void getGPSDataTask(void *parameter) {
+void getGPSDataTask(void *parameter)
+{
   // Initialize GPS Module when the task starts for the first time
-  if (!initGPS(GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE)) {
+  if (!initGPS(GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE))
+  {
     Serial.println("Warning: GPS init failed.");
   }
 
   Serial.printf("GPS UART -> RX:%d TX:%d BAUD:%d\n", GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE);
   Serial.println("System operational. Beginning capture loop...\n");
 
-  for (;;) {
+  for (;;)
+  {
     GPSData gps_data = readGPS();
 
-    // Overwrite the queue with the latest value 
+    // Overwrite the queue with the latest value
 
     xQueueOverwrite(gpsDataQueue, &gps_data);
 
@@ -168,10 +196,12 @@ void getGPSDataTask(void *parameter) {
   }
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(SERIAL_BAUDRATE);
 
-  while (!Serial && millis() < 5000) {
+  while (!Serial && millis() < 5000)
+  {
     delay(10);
   }
 
@@ -187,7 +217,8 @@ void setup() {
   xTaskCreatePinnedToCore(sendPOSTRequestTask, "POSTTask", 8192, NULL, 1, NULL, 0);
 }
 
-void loop() {
+void loop()
+{
   // Everything happens in the tasks above.
   vTaskDelay(pdMS_TO_TICKS(1000));
 }

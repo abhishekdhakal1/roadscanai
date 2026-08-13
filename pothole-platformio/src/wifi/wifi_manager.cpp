@@ -30,7 +30,7 @@ bool isWiFiConnected() {
 
 bool sendInferenceData(const char* serverUrl,
                        const InferenceResult& result,
-                       const String& gpsCoords) {
+                       const char* gpsCoords) {
   if (!isWiFiConnected()) {
     Serial.println("[WiFi] Cannot send data: Disconnected.");
     return false;
@@ -45,7 +45,7 @@ bool sendInferenceData(const char* serverUrl,
   jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
   jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
   jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
-  jsonPayload += "\"gps\":\"" + gpsCoords + "\"";
+  jsonPayload += "\"gps\":\"" + String(gpsCoords) + "\"";
   jsonPayload += "}";
 
   int httpResponseCode = http.POST(jsonPayload);

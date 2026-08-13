@@ -18,6 +18,6 @@ bool isGSMConnected();
 // manage yourself.
 bool sendInferenceDataGSM(const char* serverUrl,
                            const InferenceResult& result,
-                           const String& gpsCoords);
+                           const char* gpsCoords);
 
 #endif

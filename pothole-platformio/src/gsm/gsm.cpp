@@ -126,7 +126,7 @@ bool isGSMConnected()
 
 bool sendInferenceDataGSM(const char* serverUrl,
                            const InferenceResult& result,
-                           const String& gpsCoords)
+                           const char* gpsCoords)
 {
     if (!gprsAttached) {
         Serial.println("[GSM] Cannot send data: GPRS not attached.");
@@ -137,7 +137,7 @@ bool sendInferenceDataGSM(const char* serverUrl,
     jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
     jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
     jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
-    jsonPayload += "\"gps\":\"" + gpsCoords + "\"";
+    jsonPayload += "\"gps\":\"" + String(gpsCoords) + "\"";
     jsonPayload += "}";
 
     sendAT("AT+HTTPTERM"); // clear any leftover session, ignore result
