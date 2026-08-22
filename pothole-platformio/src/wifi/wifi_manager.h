@@ -11,6 +11,6 @@ bool isWiFiConnected();
 
 bool sendInferenceData(const char* serverUrl,
                        const InferenceResult& result,
-                       const String& gpsCoords);
+                       const char* gpsCoords);
 
 #endif

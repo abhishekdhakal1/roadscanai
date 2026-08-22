@@ -168,7 +168,7 @@ void sendPOSTRequestTask(void *parameter)
     else if (isWiFiConnected())
     {
         sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_coords);
-      
+
     }
   }
 }

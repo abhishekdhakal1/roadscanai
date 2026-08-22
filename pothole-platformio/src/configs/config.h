@@ -35,6 +35,6 @@ constexpr int NUM_CLASSES = 4;
 #define WIFI_PASSWORD "CKt4ffm2H9"
 
 // Database / API Endpoint
-#define API_SERVER_URL "http://192.168.1.73:8086/api/add"
+#define API_SERVER_URL "https://pothole-backend-87ew.onrender.com/api/v1/detections"
 
 #endif // CONFIG_H
