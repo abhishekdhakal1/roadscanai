@@ -10,13 +10,6 @@ class GPSData(BaseModel):
     speed_kmh: float
 
 
-class ClassProbs(BaseModel):
-    normal: float
-    low: float
-    medium: float
-    high: float
-
-
 class DetectionPayload(BaseModel):
     device_id: str
     seq: int
@@ -24,7 +17,6 @@ class DetectionPayload(BaseModel):
     gps: GPSData
     prediction: str
     confidence: float
-    class_probs: ClassProbs
 
 
 class DetectionResponse(BaseModel):
