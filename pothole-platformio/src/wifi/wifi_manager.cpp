@@ -1,5 +1,6 @@
 #include "wifi_manager.h"
 #include "../model/model.h"
+#include "../configs/config.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 
@@ -30,7 +31,7 @@ bool isWiFiConnected() {
 
 bool sendInferenceData(const char* serverUrl,
                        const InferenceResult& result,
-                       const char* gpsCoords) {
+                       const GPSData& gpsData) {
   if (!isWiFiConnected()) {
     Serial.println("[WiFi] Cannot send data: Disconnected.");
     return false;
@@ -41,12 +42,24 @@ bool sendInferenceData(const char* serverUrl,
   http.addHeader("Content-Type", "application/json");
 
   String jsonPayload = "{";
-  // jsonPayload += "\"class_index\":" + String(result.class_index) + ",";
-  jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
-  jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
-  jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
-  jsonPayload += "\"gps\":\"" + String(gpsCoords) + "\"";
-  jsonPayload += "}";
+
+jsonPayload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
+jsonPayload += "\"seq\":" + String(seq) + ",";
+
+jsonPayload += "\"timestamp\":\"2026-07-10T06:43:46.929Z\",";
+
+jsonPayload += "\"gps\":{";
+jsonPayload += "\"lat\":" + String(gpsData.latitude, 6) + ",";
+jsonPayload += "\"lon\":" + String(gpsData.longitude, 6) + ",";
+jsonPayload += "\"hdop\":" + String(gpsData.accuracy, 2) + ",";
+jsonPayload += "\"fix\":" + String(gpsData.fix_valid ? "true" : "false") + ",";
+jsonPayload += "\"speed_kmh\":0";
+jsonPayload += "},";
+
+jsonPayload += "\"prediction\":\"" + String(result.class_name) + "\",";
+jsonPayload += "\"confidence\":" + String(result.probability, 6);
+
+jsonPayload += "}";
 
   int httpResponseCode = http.POST(jsonPayload);
 

@@ -7,18 +7,17 @@
 
 static unsigned long last_alert_time = 0;
 static const unsigned long ALERT_COOLDOWN_MS = 5000;
+unsigned long seq = 0;
 
 // gpsDataQueue only holds the latest GPSData struct
 QueueHandle_t gpsDataQueue;
 QueueHandle_t inferenceDataQueue;
 
-#define GPS_COORDS_MAXLEN 32
-
 // AlertData struct to synchronize inference results and GPS coordinates between tasks
 typedef struct
 {
   InferenceResult inference;
-  char gps_coords[GPS_COORDS_MAXLEN];
+  GPSData gps_data;
 } AlertData;
 
 void runInferenceTask(void *parameter)
@@ -114,8 +113,7 @@ void runInferenceTask(void *parameter)
         // Prepare the alert data to send to the sendPOSTRequestTask
         AlertData alert;
         alert.inference = inference;
-        strncpy(alert.gps_coords, gps_coords.c_str(), GPS_COORDS_MAXLEN - 1);
-        alert.gps_coords[GPS_COORDS_MAXLEN - 1] = '\0';
+        alert.gps_data = gps_data;
 
         // Send the inference result and GPS coordinates to the sendPOSTRequestTask
         if (xQueueSend(inferenceDataQueue, &alert, 0) != pdTRUE)
@@ -163,11 +161,11 @@ void sendPOSTRequestTask(void *parameter)
 
     if (isGSMConnected())
     {
-      sendInferenceDataGSM(API_SERVER_URL, alert.inference, alert.gps_coords);
+      sendInferenceDataGSM(API_SERVER_URL, alert.inference, alert.gps_data);
     }
     else if (isWiFiConnected())
     {
-        sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_coords);
+        sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_data);
 
     }
   }

@@ -3,6 +3,10 @@
 
 #define SERIAL_BAUDRATE 115200
 
+// Device Name
+#define DEVICE_ID "esp32cam_01"
+extern unsigned long seq;
+
 // Camera Configuration Settings
 #define CAMERA_FRAME_SIZE FRAMESIZE_QVGA
 #define CAMERA_PIXEL_FORMAT PIXFORMAT_JPEG

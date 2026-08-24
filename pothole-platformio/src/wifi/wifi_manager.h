@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "../model/model.h"
+#include "../gps/gps.h"
 
 void initWiFi(const char* ssid, const char* password);
 bool isWiFiConnected();
@@ -11,6 +12,6 @@ bool isWiFiConnected();
 
 bool sendInferenceData(const char* serverUrl,
                        const InferenceResult& result,
-                       const char* gpsCoords);
+                       const GPSData& gpsData);
 
 #endif

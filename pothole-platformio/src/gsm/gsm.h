@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "../model/model.h"  // for InferenceResult
+#include "../gps/gps.h"    // for GPSData
 
 // Call once in setup(). rx_pin/tx_pin are ESP32 pins wired to SIM800's TX/RX
 // (cross-connected: ESP32 RX <- SIM800 TX, ESP32 TX -> SIM800 RX).
@@ -18,6 +19,6 @@ bool isGSMConnected();
 // manage yourself.
 bool sendInferenceDataGSM(const char* serverUrl,
                            const InferenceResult& result,
-                           const char* gpsCoords);
+                           const GPSData& gpsData);
 
 #endif

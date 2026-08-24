@@ -1,5 +1,6 @@
 #include "gsm.h"
 #include <HardwareSerial.h>
+#include "../configs/config.h"  // for DEVICE_ID
 
 static HardwareSerial gsmSerial(2); // UART2 - keep UART1 free for GPS
 static bool gprsAttached = false;
@@ -126,26 +127,40 @@ bool isGSMConnected()
 
 bool sendInferenceDataGSM(const char* serverUrl,
                            const InferenceResult& result,
-                           const char* gpsCoords)
+                           const GPSData& gpsData)
 {
     if (!gprsAttached) {
         Serial.println("[GSM] Cannot send data: GPRS not attached.");
         return false;
     }
 
-    String jsonPayload = "{";
-    jsonPayload += "\"class_name\":\"" + String(result.class_name) + "\",";
-    jsonPayload += "\"probability\":" + String(result.probability, 6) + ",";
-    jsonPayload += "\"inference_time_ms\":" + String(result.inference_time_ms) + ",";
-    jsonPayload += "\"gps\":\"" + String(gpsCoords) + "\"";
-    jsonPayload += "}";
+  String jsonPayload = "{";
 
-    sendAT("AT+HTTPTERM"); // clear any leftover session, ignore result
+jsonPayload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
+jsonPayload += "\"seq\":" + String(seq) + ",";
 
-    if (!sendAT("AT+HTTPINIT", "OK", "ERROR", 3000)) {
-        Serial.println("[GSM] HTTPINIT failed.");
-        return false;
-    }
+// TODO: replace this with your actual timestamp
+jsonPayload += "\"timestamp\":\"2026-07-10T06:43:46.929Z\",";
+
+jsonPayload += "\"gps\":{";
+jsonPayload += "\"lat\":" + String(gpsData.latitude, 6) + ",";
+jsonPayload += "\"lon\":" + String(gpsData.longitude, 6) + ",";
+jsonPayload += "\"hdop\":" + String(gpsData.accuracy, 2) + ",";
+jsonPayload += "\"fix\":" + String(gpsData.fix_valid ? "true" : "false") + ",";
+jsonPayload += "\"speed_kmh\":0";
+jsonPayload += "},";
+
+jsonPayload += "\"prediction\":\"" + String(result.class_name) + "\",";
+jsonPayload += "\"confidence\":" + String(result.probability, 6);
+
+jsonPayload += "}";
+sendAT("AT+HTTPTERM"); // clear any leftover session, ignore result
+
+if (!sendAT("AT+HTTPINIT", "OK", "ERROR", 3000))
+{
+    Serial.println("[GSM] HTTPINIT failed.");
+    return false;
+}
 
     sendAT("AT+HTTPPARA=\"CID\",1");
     sendAT("AT+HTTPPARA=\"URL\",\"" + String(serverUrl) + "\"");
