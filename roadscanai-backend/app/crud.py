@@ -38,10 +38,6 @@ def save_detection(db: Session, payload: DetectionPayload) -> dict:
         speed_kmh=payload.gps.speed_kmh,
         prediction=payload.prediction,
         confidence=payload.confidence,
-        prob_normal=payload.class_probs.normal,
-        prob_low=payload.class_probs.low,
-        prob_medium=payload.class_probs.medium,
-        prob_high=payload.class_probs.high,
     )
     db.add(detection)
 
@@ -65,6 +61,7 @@ def save_detection(db: Session, payload: DetectionPayload) -> dict:
         if (
             haversine(p.lat, p.lon, payload.gps.lat, payload.gps.lon)
             <= DEDUP_DISTANCE_METERS
+            
         ):
             match = p
             break

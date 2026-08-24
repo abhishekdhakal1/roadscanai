@@ -88,13 +88,7 @@ Called by the ESP32-CAM whenever it detects road damage.
     "speed_kmh": 20.5
   },
   "prediction": "high",
-  "confidence": 0.91,
-  "class_probs": {
-    "normal": 0.01,
-    "low": 0.03,
-    "medium": 0.05,
-    "high": 0.91
-  }
+  "confidence": 0.91
 }
 ```
 
@@ -109,7 +103,6 @@ Called by the ESP32-CAM whenever it detects road damage.
 | `gps.speed_kmh` | float | Vehicle speed, reported directly by the GPS module |
 | `prediction` | string | One of: `normal`, `low`, `medium`, `high` |
 | `confidence` | float | Confidence of the predicted class, 0–1 |
-| `class_probs` | object | Full softmax output across all 4 classes |
 
 **Response:**
 
@@ -170,8 +163,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/detections \
     "timestamp": "2026-07-10T06:43:46.929Z",
     "gps": {"lat": 27.7172, "lon": 85.3240, "hdop": 1.2, "fix": true, "speed_kmh": 20.5},
     "prediction": "high",
-    "confidence": 0.91,
-    "class_probs": {"normal": 0.01, "low": 0.03, "medium": 0.05, "high": 0.91}
+    "confidence": 0.91
   }'
 ```
 

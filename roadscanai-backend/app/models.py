@@ -24,10 +24,6 @@ class Detection(Base):
 
     prediction = Column(String, nullable=False)
     confidence = Column(Float, nullable=False)
-    prob_normal = Column(Float)
-    prob_low = Column(Float)
-    prob_medium = Column(Float)
-    prob_high = Column(Float)
 
     pothole_id = Column(Integer, ForeignKey("potholes.id"), nullable=True)
 
