@@ -45,8 +45,7 @@ bool sendInferenceData(const char* serverUrl,
 
 jsonPayload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
 jsonPayload += "\"seq\":" + String(seq) + ",";
-
-jsonPayload += "\"timestamp\":\"2026-07-10T06:43:46.929Z\",";
+jsonPayload += "\"timestamp\":\"" + getGPSTimestamp(gpsData) + "\",";
 
 jsonPayload += "\"gps\":{";
 jsonPayload += "\"lat\":" + String(gpsData.latitude, 6) + ",";

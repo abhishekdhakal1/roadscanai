@@ -26,6 +26,15 @@ GPSData readGPS()
     data.accuracy = -1.0f;
     data.satellite_count = 0;
 
+    data.time_valid = false;
+    data.year = 0;
+    data.month = 0;
+    data.day = 0;
+    data.hour = 0;
+    data.minute = 0;
+    data.second = 0;
+
+
     if (!gpsInitialized)
     {
         return data;
@@ -54,6 +63,17 @@ GPSData readGPS()
         data.satellite_count = (int)gps.satellites.value();
     }
 
+    if (gps.date.isValid() && gps.time.isValid())
+    {
+        data.time_valid = true;
+        data.year = gps.date.year();
+        data.month = gps.date.month();
+        data.day = gps.date.day();
+        data.hour = gps.time.hour();
+        data.minute = gps.time.minute();
+        data.second = gps.time.second();
+    }
+
     return data;
 }
 
@@ -73,4 +93,18 @@ String getGPSCoordinates(GPSData d)
     s += ",";
     s += String(d.longitude, 6);
     return s;
+}
+
+
+String getGPSTimestamp(GPSData d)
+{
+    if (!d.time_valid)
+    {
+        return "TIME_NOT_AVAILABLE";
+    }
+
+    char buf[25]; // "YYYY-MM-DDTHH:MM:SSZ" + null
+    snprintf(buf, sizeof(buf), "%04u-%02u-%02uT%02u:%02u:%02uZ",
+             d.year, d.month, d.day, d.hour, d.minute, d.second);
+    return String(buf);
 }

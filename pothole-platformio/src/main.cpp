@@ -162,11 +162,12 @@ void sendPOSTRequestTask(void *parameter)
     if (isGSMConnected())
     {
       sendInferenceDataGSM(API_SERVER_URL, alert.inference, alert.gps_data);
+      seq++;
     }
     else if (isWiFiConnected())
     {
         sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_data);
-
+        seq++;
     }
   }
 }
