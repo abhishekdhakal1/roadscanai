@@ -9,6 +9,10 @@ from app.schemas import DetectionPayload
 # Nepal timezone (UTC+5:45)
 NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
+def get_nepal_time() -> datetime:
+    """Get current time in Nepal timezone."""
+    return datetime.now(timezone.utc).astimezone(NEPAL_TZ)
+
 # Safety-net dedup only — the ESP32's capture cooldown handles primary dedup.
 # This just catches GSM retransmits or accidental duplicate sends.
 DEDUP_DISTANCE_METERS = 8
@@ -31,8 +35,8 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def save_detection(db: Session, payload: DetectionPayload) -> dict:
     reliable_gps = payload.gps.fix and payload.gps.hdop <= MAX_HDOP
 
-    # Use Nepal server time
-    server_timestamp = datetime.now(NEPAL_TZ)
+    # Get current Nepal time (works correctly on any server timezone)
+    server_timestamp = get_nepal_time()
 
     # Auto-generate seq per device (get max seq for this device + 1)
     max_seq = db.query(func.max(Detection.seq)).filter(

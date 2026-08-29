@@ -5,6 +5,10 @@ from app.database import Base
 # Nepal timezone (UTC+5:45)
 NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
+def get_nepal_time() -> datetime:
+    """Get current time in Nepal timezone."""
+    return datetime.now(timezone.utc).astimezone(NEPAL_TZ)
+
 
 class Detection(Base):
     """Raw, unprocessed reading from the ESP32-CAM — one row per JSON received."""
@@ -15,7 +19,7 @@ class Detection(Base):
     device_id = Column(String, nullable=False)
     seq = Column(Integer, nullable=False)
     timestamp = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(NEPAL_TZ)
+        DateTime, nullable=False, default=get_nepal_time
     )  # server-side Nepal time
 
     lat = Column(Float, nullable=False)
