@@ -1,9 +1,13 @@
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from sqlalchemy import func
+from datetime import timedelta, datetime, timezone
 from math import radians, sin, cos, sqrt, atan2
 
 from app.models import Detection, Pothole
 from app.schemas import DetectionPayload
+
+# Nepal timezone (UTC+5:45)
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 # Safety-net dedup only — the ESP32's capture cooldown handles primary dedup.
 # This just catches GSM retransmits or accidental duplicate sends.
@@ -27,10 +31,19 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def save_detection(db: Session, payload: DetectionPayload) -> dict:
     reliable_gps = payload.gps.fix and payload.gps.hdop <= MAX_HDOP
 
+    # Use Nepal server time
+    server_timestamp = datetime.now(NEPAL_TZ)
+
+    # Auto-generate seq per device (get max seq for this device + 1)
+    max_seq = db.query(func.max(Detection.seq)).filter(
+        Detection.device_id == payload.device_id
+    ).scalar()
+    next_seq = (max_seq or 0) + 1
+
     detection = Detection(
         device_id=payload.device_id,
-        seq=payload.seq,
-        timestamp=payload.timestamp,
+        seq=next_seq,
+        timestamp=server_timestamp,
         lat=payload.gps.lat,
         lon=payload.gps.lon,
         hdop=payload.gps.hdop,
@@ -51,7 +64,7 @@ def save_detection(db: Session, payload: DetectionPayload) -> dict:
         db.query(Pothole)
         .filter(
             Pothole.status == "active",
-            Pothole.last_seen >= payload.timestamp - DEDUP_TIME_WINDOW,
+            Pothole.last_seen >= server_timestamp - DEDUP_TIME_WINDOW,
         )
         .all()
     )
@@ -67,7 +80,7 @@ def save_detection(db: Session, payload: DetectionPayload) -> dict:
             break
 
     if match:
-        match.last_seen = payload.timestamp
+        match.last_seen = server_timestamp
         match.detection_count += 1
 
         new_rank = SEVERITY_RANK[payload.prediction]
@@ -88,8 +101,8 @@ def save_detection(db: Session, payload: DetectionPayload) -> dict:
             lon=payload.gps.lon,
             severity=payload.prediction,
             confidence=payload.confidence,
-            first_seen=payload.timestamp,
-            last_seen=payload.timestamp,
+            first_seen=server_timestamp,
+            last_seen=server_timestamp,
         )
         db.add(new_pothole)
         db.flush()  # populate new_pothole.id before commit

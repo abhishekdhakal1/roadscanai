@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.database import Base
+
+# Nepal timezone (UTC+5:45)
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 
 class Detection(Base):
@@ -11,10 +14,9 @@ class Detection(Base):
     id = Column(Integer, primary_key=True)
     device_id = Column(String, nullable=False)
     seq = Column(Integer, nullable=False)
-    timestamp = Column(DateTime, nullable=False)  # from GPS
-    received_at = Column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
-    )  # server-side receipt time
+    timestamp = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(NEPAL_TZ)
+    )  # server-side Nepal time
 
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
