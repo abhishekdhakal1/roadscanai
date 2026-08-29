@@ -10,8 +10,10 @@ from app.schemas import DetectionPayload
 NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 def get_nepal_time() -> datetime:
-    """Get current time in Nepal timezone."""
-    return datetime.now(timezone.utc).astimezone(NEPAL_TZ)
+    """Get current time in Nepal timezone as naive datetime for DB storage."""
+    utc_now = datetime.now(timezone.utc)
+    nepal_now = utc_now.astimezone(NEPAL_TZ)
+    return nepal_now.replace(tzinfo=None)  # Remove timezone info for DB
 
 # Safety-net dedup only — the ESP32's capture cooldown handles primary dedup.
 # This just catches GSM retransmits or accidental duplicate sends.
