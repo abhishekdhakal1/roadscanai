@@ -77,14 +77,9 @@ function Dashboard() {
       total > 0
         ? potholes.reduce((sum, p) => sum + p.confidence, 0) / total
         : 0
-    const latestDetection =
-      total > 0
-        ? potholes.reduce((latest, p) =>
-            new Date(p.last_seen) > new Date(latest.last_seen) ? p : latest
-          ).last_seen
-        : null
+    const totalDetections = potholes.reduce((sum, p) => sum + (p.detection_count || 0), 0)
 
-    return { total, high, medium, low, avgConfidence, latestDetection }
+    return { total, high, medium, low, avgConfidence, totalDetections }
   }, [potholes])
 
   return (

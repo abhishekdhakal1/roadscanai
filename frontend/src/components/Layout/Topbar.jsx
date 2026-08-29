@@ -51,11 +51,11 @@ function Topbar({ lastSynced, onMenuClick }) {
           {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
         </p>
 
-        <div className="hidden h-6 w-px bg-surface-border sm:block" />
+        {/* <div className="hidden h-6 w-px bg-surface-border sm:block" />
 
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-sm font-semibold text-primary ring-1 ring-inset ring-surface-border">
-          RS
-        </div>
+          R
+        </div> */}
       </div>
     </header>
   )

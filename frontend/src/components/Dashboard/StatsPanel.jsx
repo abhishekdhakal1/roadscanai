@@ -1,6 +1,5 @@
 import { memo } from 'react'
-import { Activity, AlertTriangle, ShieldAlert, ShieldCheck, Gauge, Clock } from 'lucide-react'
-import { formatTimestamp } from '../../utils/formatters'
+import { Activity, AlertTriangle, ShieldAlert, ShieldCheck, Gauge, Layers } from 'lucide-react'
 
 function StatCard({ icon: Icon, label, value, accent, loading }) {
   return (
@@ -27,7 +26,7 @@ function StatCard({ icon: Icon, label, value, accent, loading }) {
 
 /**
  * @param {{
- *   stats: { total: number, high: number, medium: number, low: number, avgConfidence: number, latestDetection: string | null },
+ *   stats: { total: number, high: number, medium: number, low: number, avgConfidence: number, totalDetections: number },
  *   loading: boolean
  * }} props
  */
@@ -50,9 +49,9 @@ function StatsPanel({ stats, loading }) {
           loading={loading}
         />
         <StatCard
-          icon={Clock}
-          label="Latest Detection"
-          value={stats?.latestDetection ? formatTimestamp(stats.latestDetection) : '—'}
+          icon={Layers}
+          label="Total Detections"
+          value={stats?.totalDetections ?? 0}
           accent="#64748B"
           loading={loading}
         />
