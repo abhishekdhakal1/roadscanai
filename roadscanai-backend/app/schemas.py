@@ -12,8 +12,6 @@ class GPSData(BaseModel):
 
 class DetectionPayload(BaseModel):
     device_id: str
-    seq: int
-    timestamp: datetime
     gps: GPSData
     prediction: str
     confidence: float
