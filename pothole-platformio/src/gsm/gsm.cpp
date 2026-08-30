@@ -137,8 +137,6 @@ bool sendInferenceDataGSM(const char* serverUrl,
   String jsonPayload = "{";
 
 jsonPayload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
-jsonPayload += "\"seq\":" + String(seq) + ",";
-jsonPayload += "\"timestamp\":\"" + getGPSTimestamp(gpsData) + "\",";
 
 jsonPayload += "\"gps\":{";
 jsonPayload += "\"lat\":" + String(gpsData.latitude, 6) + ",";

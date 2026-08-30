@@ -1,6 +1,10 @@
 #include "camera.h"
 #include "../configs/config.h"
 #include "configs/board_config.h"
+#include "esp_camera.h"
+#include <WiFi.h>
+
+void startCameraServer();
 
 bool initCamera() {
   camera_config_t config;
@@ -54,7 +58,28 @@ bool initCamera() {
   sensor_t *sensor = esp_camera_sensor_get();
   sensor->set_framesize(sensor, CAMERA_FRAME_SIZE);
 
+   sensor->set_vflip(sensor, 1); // flip it back
+  sensor->set_brightness(sensor, 1); // up the brightness just a bit
+  sensor->set_saturation(sensor, -1); // lower the saturation
+
   Serial.println("Camera Initialized");
+
+   WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  startCameraServer();
+
+
+  Serial.print("Camera Ready! Use 'http://");
+  Serial.print(WiFi.localIP());
+  Serial.println("' to connect");
+
   return true;
 }
 

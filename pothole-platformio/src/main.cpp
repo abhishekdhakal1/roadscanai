@@ -4,10 +4,11 @@
 #include "gps/gps.h"
 #include "wifi/wifi_manager.h"
 #include "gsm/gsm.h"
+#include "esp_camera.h"
+#include <WiFi.h>
 
 static unsigned long last_alert_time = 0;
 static const unsigned long ALERT_COOLDOWN_MS = 5000;
-unsigned long seq = 0;
 
 // gpsDataQueue only holds the latest GPSData struct
 QueueHandle_t gpsDataQueue;
@@ -19,6 +20,8 @@ typedef struct
   InferenceResult inference;
   GPSData gps_data;
 } AlertData;
+
+void startCameraServer();
 
 void runInferenceTask(void *parameter)
 {
@@ -141,13 +144,10 @@ void runInferenceTask(void *parameter)
     Serial.printf("[TIMING] capture:%lu ms | convert:%lu ms | inference:%lu ms | total:%lu ms\n\n",
                   capture_ms, convert_ms, inference_ms, total_ms);
 
-    const unsigned long TARGET_PERIOD_MS = 3000;
-    unsigned long elapsed = millis() - loop_start;
-    if (elapsed < TARGET_PERIOD_MS)
-      vTaskDelay(pdMS_TO_TICKS(TARGET_PERIOD_MS - elapsed));
+    // Yield CPU for 10ms to feed the FreeRTOS watchdog scheduler
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
-
 void sendPOSTRequestTask(void *parameter)
 {
   initWiFi(WIFI_SSID, WIFI_PASSWORD);
@@ -162,12 +162,10 @@ void sendPOSTRequestTask(void *parameter)
     if (isGSMConnected())
     {
       sendInferenceDataGSM(API_SERVER_URL, alert.inference, alert.gps_data);
-      seq++;
     }
     else if (isWiFiConnected())
     {
         sendInferenceData(API_SERVER_URL, alert.inference, alert.gps_data);
-        seq++;
     }
   }
 }

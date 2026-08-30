@@ -31,9 +31,6 @@ GPSData readGPS()
     data.month = 0;
     data.day = 0;
     data.hour = 0;
-    data.minute = 0;
-    data.second = 0;
-
 
     if (!gpsInitialized)
     {
@@ -96,15 +93,3 @@ String getGPSCoordinates(GPSData d)
 }
 
 
-String getGPSTimestamp(GPSData d)
-{
-    if (!d.time_valid)
-    {
-        return "TIME_NOT_AVAILABLE";
-    }
-
-    char buf[25]; // "YYYY-MM-DDTHH:MM:SSZ" + null
-    snprintf(buf, sizeof(buf), "%04u-%02u-%02uT%02u:%02u:%02uZ",
-             d.year, d.month, d.day, d.hour, d.minute, d.second);
-    return String(buf);
-}

@@ -37,6 +37,10 @@ bool sendInferenceData(const char* serverUrl,
     return false;
   }
 
+  if(result.probability<0.4){
+    return false;
+  }
+
   HTTPClient http;
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
@@ -44,8 +48,6 @@ bool sendInferenceData(const char* serverUrl,
   String jsonPayload = "{";
 
 jsonPayload += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
-jsonPayload += "\"seq\":" + String(seq) + ",";
-jsonPayload += "\"timestamp\":\"" + getGPSTimestamp(gpsData) + "\",";
 
 jsonPayload += "\"gps\":{";
 jsonPayload += "\"lat\":" + String(gpsData.latitude, 6) + ",";
